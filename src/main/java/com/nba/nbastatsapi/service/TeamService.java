@@ -1,6 +1,7 @@
 package com.nba.nbastatsapi.service;
 
 
+import com.nba.nbastatsapi.dto.TeamDTO;
 import com.nba.nbastatsapi.entity.Team;
 import com.nba.nbastatsapi.repository.TeamRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,13 +36,24 @@ public class TeamService {
             team.setCity((String) teamData.get("city"));
             team.setConference((String) teamData.get("conference"));
             team.setDivision((String) teamData.get("division"));
-
-
             teamRepository.save(team);
 
-
+    }
     }
 
+    public List<TeamDTO> getAllTeams() {
+        return teamRepository.findAll()
+                .stream()
+                .map(team -> TeamDTO.builder()
+                        .name(team.getName())
+                        .fullName(team.getFullName())
+                        .abbreviation(team.getAbbreviation())
+                        .city(team.getCity())
+                        .conference(team.getConference())
+                        .division(team.getDivision())
+                        .build())
+                .toList();
     }
+
 
 }
