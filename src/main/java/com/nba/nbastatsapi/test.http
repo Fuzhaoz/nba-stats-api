@@ -20,13 +20,16 @@ GET http://localhost:8080/api/players/search?name=LeBron
 GET http://localhost:8080/api/players/search?name=James
 
 ###
-POST http://localhost:8080/api/games/sync?cursor=18447987
+POST http://localhost:8080/api/games/sync?cursor=18447018
 
 ###
 GET http://localhost:8080/api/games/today
 
 ###
-GET http://localhost:8080/api/games?date=2026-04-07
+GET http://localhost:8080/api/games?date=2026-04-1
+
+###
+GET http://localhost:8080/api/teams/6/record
 
 
 

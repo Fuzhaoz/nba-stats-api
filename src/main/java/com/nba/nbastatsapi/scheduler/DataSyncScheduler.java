@@ -22,7 +22,7 @@ public class DataSyncScheduler {
         log.info("Team sync completed!");
     }
 
-    @Scheduled(cron = "1 * * * * *")
+    @Scheduled(cron = "0 1 * * * *")
     public void syncTodayGames() {
         log.info("Starting today games sync...");
         gameService.syncTodayGames();

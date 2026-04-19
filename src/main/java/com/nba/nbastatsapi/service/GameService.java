@@ -1,6 +1,8 @@
 package com.nba.nbastatsapi.service;
 
 import com.nba.nbastatsapi.dto.GameDTO;
+import com.nba.nbastatsapi.dto.TeamRecordDTO;
+import com.nba.nbastatsapi.ecxeption.ResourceNotFoundException;
 import com.nba.nbastatsapi.entity.Game;
 import com.nba.nbastatsapi.entity.Team;
 import com.nba.nbastatsapi.repository.GameRepository;
@@ -123,7 +125,21 @@ public class GameService {
                 .visitorOt1(game.getVisitorOt1())
                 .visitorOt2(game.getVisitorOt2())
                 .visitorOt3(game.getVisitorOt3())
+                .winner(determimeWinner(game))
                 .build();
+
+    }
+
+    private String determimeWinner(Game game){
+        if(game.getHomeTeamScore() == null || game.getVisitorTeamScore() == null){
+            return null;
+        }else if(game.getVisitorTeamScore() > game.getHomeTeamScore()){
+            return game.getVisitorTeam().getName();
+        }else if(game.getHomeTeamScore() > game.getVisitorTeamScore()){
+            return game.getHomeTeam().getName();
+        }else {
+            return null;
+        }
 
     }
 
@@ -141,6 +157,8 @@ public class GameService {
                 .map(this::convertGameDTO)
                 .toList();
     }
+
+
 
     public void syncTodayGames() {
         String yesterday = LocalDate.now().minusDays(1).toString();

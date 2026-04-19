@@ -35,5 +35,7 @@ public class GameDTO {
     private Integer visitorOt2;
     private Integer visitorOt3;
 
+    private String winner;
+
 
 }
