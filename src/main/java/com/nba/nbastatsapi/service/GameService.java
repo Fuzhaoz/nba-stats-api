@@ -174,5 +174,15 @@ public class GameService {
         log.info("Synced {} games for today: {}", games.size(), yesterday);
     }
 
+    public List<GameDTO> getRecentGames(Long teamId, int limit) {
+        teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + teamId));
+
+        return gameRepository.findRecentGamesByTeamId(teamId, limit)
+                .stream()
+                .map(this::convertGameDTO)
+                .toList();
+    }
+
 
 }

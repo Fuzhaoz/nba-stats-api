@@ -29,7 +29,14 @@ GET http://localhost:8080/api/games/today
 GET http://localhost:8080/api/games?date=2026-04-1
 
 ###
-GET http://localhost:8080/api/teams/6/record
+GET http://localhost:8080/api/teams/3/record
+
+###
+GET http://localhost:8080/api/teams/standings
+
+###
+GET http://localhost:8080/api/games/recent/2 ? limit=20
+
 
 
 

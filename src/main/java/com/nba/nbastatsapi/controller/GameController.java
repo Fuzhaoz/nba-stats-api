@@ -4,6 +4,7 @@ import com.nba.nbastatsapi.dto.GameDTO;
 import com.nba.nbastatsapi.entity.Game;
 import com.nba.nbastatsapi.service.GameService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -49,6 +50,18 @@ public class GameController {
     public ResponseEntity<List<GameDTO>> getGamesByDate(
             @RequestParam String date) {
         return ResponseEntity.ok(gameService.getGamesByDate(date));
+    }
+
+    @GetMapping("/recent/{teamId}")
+    @Operation(summary = "Get recent games by team", description = "Return the most recent N games for a specific team")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Recent games returned successfully"),
+            @ApiResponse(responseCode = "404", description = "Team not found")
+    })
+    public ResponseEntity<List<GameDTO>> getRecentGamesByTeam(
+            @PathVariable Long teamId,
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(gameService.getRecentGames(teamId, limit));
     }
 
 }

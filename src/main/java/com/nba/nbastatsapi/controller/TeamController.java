@@ -3,7 +3,6 @@ package com.nba.nbastatsapi.controller;
 
 import com.nba.nbastatsapi.dto.TeamDTO;
 import com.nba.nbastatsapi.dto.TeamRecordDTO;
-import com.nba.nbastatsapi.entity.Team;
 import com.nba.nbastatsapi.service.TeamService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -53,6 +53,16 @@ public class TeamController {
         return ResponseEntity.ok(teamService.getTeamRecord(id));
     }
 
+
+    @GetMapping("/standings")
+    @Operation(summary = "Get standings", description = "Return all 30 NBA teams ranked by win percentage, grouped by conference")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Standings returned successfully"),
+    })
+    public ResponseEntity<Map<String, List<TeamRecordDTO>>> getStandings(){
+
+        return ResponseEntity.ok(teamService.getStandings());
+    }
 
 
 }
