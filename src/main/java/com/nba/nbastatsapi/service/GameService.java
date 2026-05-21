@@ -1,7 +1,6 @@
 package com.nba.nbastatsapi.service;
 
 import com.nba.nbastatsapi.dto.GameDTO;
-import com.nba.nbastatsapi.dto.TeamRecordDTO;
 import com.nba.nbastatsapi.ecxeption.ResourceNotFoundException;
 import com.nba.nbastatsapi.entity.Game;
 import com.nba.nbastatsapi.entity.Team;
