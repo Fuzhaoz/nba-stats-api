@@ -35,44 +35,51 @@ jobs:
 
       - name: Build jar
         run: ./mvnw clean package -DskipTests
-        env:
-          DB_URL: jdbc:postgresql://localhost:5432/test
-          DB_USERNAME: test
-          DB_PASSWORD: test
-          API_KEY: dummy-key
 
-      - name: Upload JAR artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-jar
-          path: target/*.jar
-
-  deploy:
+  docker:
     runs-on: ubuntu-latest
     needs: build-and-test
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
 
     steps:
-      - name: Download JAR artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: app-jar
+      - name: Checkout source code
+        uses: actions/checkout@v4
 
-      - name: Upload JAR to EC2
-        uses: appleboy/scp-action@v0.1.7
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "*.jar"
-          target: "/home/ec2-user/"
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Restart service on EC2
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: tonyfu0712/nba-stats-api:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+
+    steps:
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            sudo systemctl restart nba-stats-api
-            sudo systemctl status nba-stats-api
+            docker pull tonyfu0712/nba-stats-api:latest
+            docker stop nba-stats || true
+            docker rm nba-stats || true
+            docker run -d \
+              --name nba-stats \
+              --restart always \
+              -p 8080:8080 \
+              -e DB_URL="jdbc:postgresql://nba-db.cre6weeuk1kr.ap-southeast-2.rds.amazonaws.com:5432/postgres" \
+              -e DB_USERNAME="postgres" \
+              -e DB_PASSWORD="0228366023abc" \
+              -e API_KEY="eb0de0d3-9379-4ff7-b81e-95a7ab53a17d" \
+              tonyfu0712/nba-stats-api:latest
