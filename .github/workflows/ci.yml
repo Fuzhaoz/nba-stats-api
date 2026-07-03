@@ -78,8 +78,9 @@ jobs:
               --name nba-stats \
               --restart always \
               -p 8080:8080 \
-              -e DB_URL="jdbc:postgresql://nba-db.cre6weeuk1kr.ap-southeast-2.rds.amazonaws.com:5432/postgres" \
-              -e DB_USERNAME="postgres" \
-              -e DB_PASSWORD="0228366023abc" \
-              -e API_KEY="eb0de0d3-9379-4ff7-b81e-95a7ab53a17d" \
+              -e DB_URL=${{ secrets.DB_URL }} \
+              -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e API_KEY=${{ secrets.API_KEY }} \
+              -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
               tonyfu0712/nba-stats-api:latest

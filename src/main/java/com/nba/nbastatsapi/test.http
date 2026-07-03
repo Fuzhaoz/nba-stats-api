@@ -62,9 +62,29 @@ GET http://localhost:8080/api/teams/standings
 ###
 GET http://localhost:8080/api/games/recent/2 ? limit=20
 
+###
+POST http://localhost:8080/auth/register
+Content-Type: application/json
+
+{
+  "email": "tony@gmail.com",
+  "password": "123456"
+}
+
+###
+GET http://localhost:8080/auth/users
 
 
+###
+POST http://localhost:8080/auth/login
+Content-Type: application/json
 
+{
+  "email": "tony@gmail.com",
+  "password": "123456"
+}
 
-
+###
+POST http://localhost:8080/api/players/sync
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJ0b255QGdtYWlsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4MzA3NjkxMiwiZXhwIjoxNzgzMTYzMzEyfQ.sOV-n73Vr6Xz7eBRVA0mX7gZtQLdf9W03MwxRroYHsMvuPxEIOpiW7bdzWc2rco-
 
