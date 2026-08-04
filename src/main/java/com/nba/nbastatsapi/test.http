@@ -85,6 +85,22 @@ Content-Type: application/json
 }
 
 ###
-POST http://localhost:8080/api/players/sync
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJ0b255QGdtYWlsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4MzA3NjkxMiwiZXhwIjoxNzgzMTYzMzEyfQ.sOV-n73Vr6Xz7eBRVA0mX7gZtQLdf9W03MwxRroYHsMvuPxEIOpiW7bdzWc2rco-
+POST http://3.27.135.100:8080/api/players/sync
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJ0b255QGdtYWlsLmNvbSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc4MzA3ODYzOCwiZXhwIjoxNzgzMTY1MDM4fQ.C-w_vawRTMbTL7P43T7oCyV_0aU8nEPhImruaUpjC2y_zLM88c_4IGK4eqkaeAXS
 
+###
+POST http://3.27.135.100:8080/auth/register
+Content-Type: application/json
+
+{
+  "email": "tony@gmail.com",
+  "password": "123456"
+}
+###
+POST http://3.27.135.100:8080/auth/login
+Content-Type: application/json
+
+{
+"email": "tony@gmail.com",
+"password": "123456"
+}
