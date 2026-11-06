@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,26 +24,63 @@ public class GameService {
     private final RestClient restClient;
     private final GameRepository gameRepository;
     private final TeamRepository teamRepository;
+    private final SeasonService seasonService;
 
-    public String syncGames(int cursor) {
-        Map response = restClient.get()
-                .uri("/games?seasons[]=2025&per_page=100&cursor=" + cursor)
-                .retrieve()
-                .body(Map.class);
+    public String syncGames() {
 
-        List<Map> games = (List<Map>) response.get("data");
-        Map meta = (Map) response.get("meta");
+        int season = seasonService.getCurrentSeason();
+        Integer cursor = null;
+        int totalGames = 0;
 
-        for(Map gameData : games){
-            saveGame(gameData);
-        }
-        Object nextCursor = meta.get("next_cursor");
-        if (nextCursor == null) {
-            return "Sync complete!";
-        } else {
-            return "Next cursor: " + nextCursor;
-        }
+        do {
+            Integer currentCursor = cursor;
 
+            Map response = restClient.get()
+                    .uri(uriBuilder -> {
+                        var builder = uriBuilder
+                                .path("/games")
+                                .queryParam("seasons[]", season)
+                                .queryParam("per_page", 100);
+
+                        if (currentCursor != null) {
+                            builder.queryParam("cursor", currentCursor);
+                        }
+
+                        return builder.build();
+                    })
+                    .retrieve()
+                    .body(Map.class);
+
+            if (response == null) {
+                throw new IllegalStateException("Empty API response");
+            }
+
+            List<Map> games = (List<Map>) response.get("data");
+
+            if (games == null) {
+                throw new IllegalStateException("Missing games data");
+            }
+
+            for (Map gameData : games) {
+                saveGame(gameData);
+            }
+
+            totalGames += games.size();
+
+            Map meta = (Map) response.get("meta");
+
+            Object nextCursor = meta == null
+                    ? null
+                    : meta.get("next_cursor");
+
+            cursor = nextCursor == null
+                    ? null
+                    : ((Number) nextCursor).intValue();
+
+        } while (cursor != null);
+
+        return "Season " + season
+                + " sync complete! Total games: " + totalGames;
     }
 
     private void saveGame(Map gameData) {
@@ -159,19 +197,6 @@ public class GameService {
 
 
 
-    public void syncTodayGames() {
-        String yesterday = LocalDate.now().minusDays(1).toString();
-        Map respone = restClient.get()
-                .uri("/games?dates[]=" + yesterday + "&per_page=100")
-                .retrieve()
-                .body(Map.class);
-        List<Map> games = (List<Map>)respone.get("data");
-
-        for(Map game : games){
-            saveGame(game);
-        }
-        log.info("Synced {} games for today: {}", games.size(), yesterday);
-    }
 
     public List<GameDTO> getRecentGames(Long teamId, int limit) {
         teamRepository.findById(teamId)
@@ -182,6 +207,46 @@ public class GameService {
                 .map(this::convertGameDTO)
                 .toList();
     }
+
+    public void syncTodayGames() {
+
+        ZoneId nbaZone = ZoneId.of("America/New_York");
+        LocalDate today = LocalDate.now(nbaZone);
+
+        syncGamesByDate(today);
+        syncGamesByDate(today.minusDays(1));
+    }
+
+    //sync games when the application start to prevent miss games
+    public int syncGamesByDate(LocalDate date) {
+        String dateString = date.toString();
+
+        Map response = restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/games")
+                        .queryParam("dates[]", dateString)
+                        .queryParam("per_page", 100)
+                        .build())
+                .retrieve()
+                .body(Map.class);
+
+        if (response == null || response.get("data") == null) {
+            throw new IllegalStateException(
+                    "Failed to fetch games for " + dateString
+            );
+        }
+
+        List<Map> games = (List<Map>) response.get("data");
+
+        for (Map game : games) {
+            saveGame(game);
+        }
+
+        log.info("Synced {} games for {}", games.size(), dateString);
+
+        return games.size();
+    }
+
 
 
 }
