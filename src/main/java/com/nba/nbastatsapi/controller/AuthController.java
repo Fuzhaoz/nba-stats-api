@@ -12,8 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.stream.Collectors;
+
 
 @RestController
 @RequestMapping("/auth")
@@ -52,12 +51,5 @@ public class AuthController {
         return ResponseEntity.ok(new AuthResponse(token));
     }
 
-    @GetMapping("/users")
-    public ResponseEntity<List<String>> getAllUsers() {
-        List<String> emails = userRepository.findAll()
-                .stream()
-                .map(User::getEmail)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(emails);
-    }
+
 }

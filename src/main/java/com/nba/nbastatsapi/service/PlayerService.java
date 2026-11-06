@@ -81,7 +81,7 @@ public class PlayerService {
                 .jerseyNumber(player.getJerseyNumber())
                 .college(player.getCollege())
                 .country(player.getCountry())
-                .teamName(player.getTeam().getName() != null ? player.getTeam().getAbbreviation() : null )
+                .teamName(player.getTeam() != null ? player.getTeam().getName() : null)
                 .teamAbbreviation(player.getTeam() != null ? player.getTeam().getAbbreviation() : null)
                 .draftYear(player.getDraftYear())
                 .draftRound(player.getDraftRound())
