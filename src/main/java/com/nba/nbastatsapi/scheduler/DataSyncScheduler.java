@@ -1,5 +1,5 @@
 package com.nba.nbastatsapi.scheduler;
-
+import com.nba.nbastatsapi.service.BackfillService;
 import com.nba.nbastatsapi.service.GameService;
 import com.nba.nbastatsapi.service.TeamService;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +14,7 @@ public class DataSyncScheduler {
 
     private final TeamService teamService;
     private final GameService gameService;
+    private final BackfillService backfillService;
 
     @Scheduled(cron = "0 0 2 * * *")
     public void syncTeams() {
@@ -22,11 +23,18 @@ public class DataSyncScheduler {
         log.info("Team sync completed!");
     }
 
-    @Scheduled(cron = "0 1 * * * *")
+    @Scheduled(cron = "0 */30 * * * *")
     public void syncTodayGames() {
-        log.info("Starting today games sync...");
+
+        log.info("Starting NBA games sync...");
+
+        //  Backfill missing games from previous dates
+        backfillService.backfillGames();
+
+        // update today games
         gameService.syncTodayGames();
-        log.info("Today games sync completed!");
+
+        log.info("NBA games sync completed!");
     }
 
 }

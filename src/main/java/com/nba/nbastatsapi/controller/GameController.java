@@ -27,9 +27,8 @@ public class GameController {
             @ApiResponse(responseCode = "200", description = "Games synced successfully"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<String> syncGames(
-            @RequestParam(defaultValue = "0") int cursor) {
-        String result = gameService.syncGames(cursor);
+    public ResponseEntity<String> syncGames() {
+        String result = gameService.syncGames();
         return ResponseEntity.ok(result);
     }
 
