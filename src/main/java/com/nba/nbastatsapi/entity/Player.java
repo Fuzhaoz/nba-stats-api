@@ -31,6 +31,9 @@ public class Player {
     private Integer draftYear;
     private Integer draftRound;
     private Integer draftNumber;
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean isActive = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_id")

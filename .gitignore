@@ -32,4 +32,10 @@ build/
 ### VS Code ###
 .vscode/
 
+# IntelliJ HTTP Client private environment
+http-client.env.json
+
+# Local HTTP testing requests
+test.http
+
 

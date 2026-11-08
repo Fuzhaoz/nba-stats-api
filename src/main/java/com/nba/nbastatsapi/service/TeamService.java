@@ -7,14 +7,18 @@ import com.nba.nbastatsapi.dto.TeamRecordDTO;
 import com.nba.nbastatsapi.ecxeption.ResourceNotFoundException;
 import com.nba.nbastatsapi.entity.Game;
 import com.nba.nbastatsapi.entity.Team;
+import com.nba.nbastatsapi.entity.TeamStanding;
 import com.nba.nbastatsapi.repository.GameRepository;
 import com.nba.nbastatsapi.repository.TeamRepository;
+import com.nba.nbastatsapi.repository.TeamStandingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +26,7 @@ public class TeamService {
     private final TeamRepository teamRepository;
     private final RestClient restClient;
     private final GameRepository gameRepository;
+    private final TeamStandingRepository teamStandingRepository;
 
     public void syncTeams(){
         Map respone = restClient.get()
@@ -47,6 +52,133 @@ public class TeamService {
     }
     }
 
+    public String syncStandings(int season) {
+
+        // 1. Fetch official standings
+        Map response = restClient.get()
+                .uri("/standings?season=" + season)
+                .retrieve()
+                .body(Map.class);
+
+        if (response == null || response.get("data") == null) {
+            throw new IllegalStateException("Invalid standings API response");
+        }
+
+        List<Map<String, Object>> standings =
+                (List<Map<String, Object>>) response.get("data");
+
+        if (standings.isEmpty()) {
+            throw new IllegalStateException(
+                    "No standings returned for season: " + season);
+        }
+
+        // 2. Save or update each team's standings
+        for (Map<String, Object> standingData : standings) {
+
+            Map<String, Object> teamData =
+                    (Map<String, Object>) standingData.get("team");
+
+            Integer teamApiId = ((Number) teamData.get("id")).intValue();
+
+            Team team = teamRepository.findByTeamIdFromApi(teamApiId)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Team not found: " + teamApiId));
+
+            TeamStanding standing = teamStandingRepository
+                    .findByTeam_IdAndSeason(team.getId(), season)
+                    .orElseGet(TeamStanding::new);
+
+            standing.setTeam(team);
+            standing.setSeason(season);
+
+            standing.setConferenceRank(
+                    ((Number) standingData.get("conference_rank")).intValue());
+
+            standing.setDivisionRank(
+                    ((Number) standingData.get("division_rank")).intValue());
+
+            standing.setWins(
+                    ((Number) standingData.get("wins")).intValue());
+
+            standing.setLosses(
+                    ((Number) standingData.get("losses")).intValue());
+
+            standing.setHomeRecord((String) standingData.get("home_record"));
+            standing.setRoadRecord((String) standingData.get("road_record"));
+            standing.setConferenceRecord((String) standingData.get("conference_record"));
+            standing.setDivisionRecord((String) standingData.get("division_record"));
+
+            teamStandingRepository.save(standing);
+        }
+
+        return "Standings synced successfully for season " + season
+                + ". Teams: " + standings.size();
+    }
+
+
+    private String calculateStreak(Long teamId, int season) {
+
+        List<Game> games = gameRepository
+                .findByHomeTeamIdOrVisitorTeamId(teamId, teamId)
+                .stream()
+                .filter(g -> g.getSeason() != null
+                        && g.getSeason() == season
+                        && "Final".equals(g.getStatus())
+                        && Boolean.FALSE.equals(g.getPostseason())
+                        && g.getHomeTeamScore() != null
+                        && g.getVisitorTeamScore() != null)
+                .sorted(Comparator.comparing(
+                        Game::getDate,
+                        Comparator.nullsFirst(
+                                Comparator.naturalOrder()
+                        )
+                ).reversed())
+                .toList();
+
+        if (games.isEmpty()) {
+            return "-";
+        }
+
+        Boolean lastResult = null;
+        int count = 0;
+
+        for (Game game : games) {
+
+            boolean isHome = game.getHomeTeam().getId().equals(teamId);
+
+            int teamScore = isHome
+                    ? game.getHomeTeamScore()
+                    : game.getVisitorTeamScore();
+
+            int opponentScore = isHome
+                    ? game.getVisitorTeamScore()
+                    : game.getHomeTeamScore();
+
+            if (teamScore == opponentScore) {
+                continue;
+            }
+
+            boolean won = teamScore > opponentScore;
+
+            if (lastResult == null) {
+                lastResult = won;
+            }
+
+            if (won != lastResult) {
+                break;
+            }
+
+            count++;
+        }
+
+        if (lastResult == null) {
+            return "-";
+        }
+
+        return (lastResult ? "W" : "L") + count;
+    }
+
+
     public List<TeamDTO> getAllTeams() {
         return teamRepository.findAll()
                 .stream()
@@ -61,80 +193,86 @@ public class TeamService {
                 .toList();
     }
 
-    public TeamRecordDTO getTeamRecord(Long teamId) {
-        List<Game> allGames = gameRepository.findByHomeTeamIdOrVisitorTeamId(teamId, teamId);
-        List<Game> homeGames = gameRepository.findByHomeTeamId(teamId);
-        List<Game> awayGames = gameRepository.findByVisitorTeamId(teamId);
-        List<Game> finishedGames = allGames.stream()
-                .filter(g -> "Final".equals(g.getStatus())&& Boolean.FALSE.equals(g.getPostseason()))
-                .toList();
+    public TeamRecordDTO getTeamRecord(Long teamId, int season) {
 
-        List<Game> finishedHomeGames = homeGames.stream()
-                .filter(g -> "Final".equals(g.getStatus())&& Boolean.FALSE.equals(g.getPostseason()))
-                .toList();
+        TeamStanding standing = teamStandingRepository
+                .findByTeam_IdAndSeason(teamId, season)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Team standing not found for team: " + teamId
+                ));
 
-        List<Game> finishedAwayGames = awayGames.stream()
-                .filter(g -> "Final".equals(g.getStatus())&& Boolean.FALSE.equals(g.getPostseason()))
-                .toList();
+        Team team = standing.getTeam();
 
+        int wins = standing.getWins();
+        int losses = standing.getLosses();
 
-        int homeWins = (int) finishedHomeGames.stream()
-                .filter(g -> g.getHomeTeamScore() > g.getVisitorTeamScore())
-                .count();
-        int homeLosses = finishedHomeGames.size() - homeWins;
-
-        int awayWins = (int) finishedAwayGames.stream()
-                .filter(g -> g.getVisitorTeamScore() > g.getHomeTeamScore())
-                .count();
-        int awayLosses = finishedAwayGames.size() - awayWins;
-
-        int wins = homeWins + awayWins;
-        int losses = homeLosses + awayLosses;
-
-        Team team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + teamId));
-
-
-        double winPercentage = finishedGames.isEmpty() ? 0.0 :
-                Math.round((double) wins / finishedGames.size() * 1000.0) / 1000.0;
-
+        double winPercentage = wins + losses == 0
+                ? 0.0
+                : Math.round(
+                (double) wins / (wins + losses) * 1000.0
+        ) / 1000.0;
 
         return TeamRecordDTO.builder()
+                .teamId(team.getId())
                 .teamName(team.getFullName())
+                .abbreviation(team.getAbbreviation())
                 .conference(team.getConference())
-                .division(team.getDivision())
+                .conferenceRank(standing.getConferenceRank())
                 .wins(wins)
                 .losses(losses)
                 .winPercentage(winPercentage)
-                .homeWins(homeWins)
-                .homeLosses(homeLosses)
-                .awayWins(awayWins)
-                .awayLosses(awayLosses)
+                .streak(calculateStreak(teamId, season))
                 .build();
-
     }
 
-    public Map<String, List<TeamRecordDTO>> getStandings(){
-        List<Team> allTeams = teamRepository.findAll();
-        List<TeamRecordDTO> allRecords = allTeams.stream()
-                .map(t -> getTeamRecord(t.getId())) //convert Team to TeamRecordDTO
+
+    public Map<String, List<TeamRecordDTO>> getStandings(int season) {
+
+        List<TeamStanding> standings =
+                teamStandingRepository.findBySeason(season);
+
+        List<TeamRecordDTO> records = standings.stream()
+                .map(s -> {
+
+                    Team team = s.getTeam();
+
+                    int wins = s.getWins();
+                    int losses = s.getLosses();
+
+                    double pct = wins + losses == 0
+                            ? 0.0
+                            : Math.round(
+                            (double) wins / (wins + losses) * 1000.0
+                    ) / 1000.0;
+
+                    return TeamRecordDTO.builder()
+                            .teamId(team.getId())
+                            .teamName(team.getFullName())
+                            .abbreviation(team.getAbbreviation())
+                            .conference(team.getConference())
+                            .conferenceRank(s.getConferenceRank())
+                            .wins(wins)
+                            .losses(losses)
+                            .winPercentage(pct)
+                            .streak(calculateStreak(team.getId(), season))
+                            .build();
+                })
                 .toList();
 
-        List<TeamRecordDTO> sortedRecords = allRecords.stream()
-                .sorted((a, b) -> Double.compare(b.getWinPercentage(), a.getWinPercentage()))
-                .toList();
-
-        List<TeamRecordDTO> east = sortedRecords.stream()
+        List<TeamRecordDTO> east = records.stream()
                 .filter(r -> "East".equals(r.getConference()))
+                .sorted(Comparator.comparingInt(
+                        TeamRecordDTO::getConferenceRank))
                 .toList();
 
-        List<TeamRecordDTO> west = sortedRecords.stream()
+        List<TeamRecordDTO> west = records.stream()
                 .filter(r -> "West".equals(r.getConference()))
+                .sorted(Comparator.comparingInt(
+                        TeamRecordDTO::getConferenceRank))
                 .toList();
 
-        return Map.of("East",east,  "West",west );
-
-
+        return Map.of("East", east, "West", west);
     }
+
 
 }
