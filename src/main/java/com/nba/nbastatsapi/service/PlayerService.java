@@ -10,9 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -22,32 +20,94 @@ public class PlayerService {
     private final TeamRepository teamRepository;
 
 
+
     public String syncPlayers(int cursor) {
 
-            Map respone = restClient.get()
-                    .uri("/players?per_page=100&cursor="+ cursor )
+        if (cursor != 0) {
+            throw new IllegalArgumentException(
+                    "Full sync must start with cursor=0"
+            );
+        }
+
+        int currentCursor = 0;
+        List<Map> allPlayers = new ArrayList<>();
+        Set<Integer> visitedCursors = new HashSet<>();
+
+        while (true) {
+
+            if (!visitedCursors.add(currentCursor)) {
+                throw new IllegalStateException("Repeated cursor");
+            }
+
+            Map response = restClient.get()
+                    .uri("/players/active?per_page=100&cursor=" + currentCursor)
                     .retrieve()
                     .body(Map.class);
-            List<Map> players = (List<Map>)respone.get("data");
-            Map meta = (Map)respone.get("meta");
 
-            for(Map playerData : players){
-                savePlayer(playerData);
+            if (response == null) {
+                throw new IllegalStateException("Empty API response");
             }
+
+            List<Map> players = (List<Map>) response.get("data");
+            Map meta = (Map) response.get("meta");
+
+            if (players == null || meta == null) {
+                throw new IllegalStateException("Invalid API response");
+            }
+
+            allPlayers.addAll(players);
+
             Object nextCursor = meta.get("next_cursor");
-            if(nextCursor == null){
-                return "Sync complete!";
-            }else {
-                return "Next cursor: " + nextCursor;
+
+            if (nextCursor == null) {
+                break;
             }
 
+            currentCursor = ((Number) nextCursor).intValue();
+        }
+
+        if (allPlayers.isEmpty()) {
+            throw new IllegalStateException("Active player list is empty");
+        }
+
+        Set<Integer> activePlayerIds = new HashSet<>();
+
+        for (Map playerData : allPlayers) {
+
+            Integer apiId = (Integer) playerData.get("id");
+
+            if (apiId == null) {
+                throw new IllegalStateException("Player ID missing");
+            }
+
+            activePlayerIds.add(apiId);
+        }
 
 
+        for (Map playerData : allPlayers) {
+            savePlayer(playerData);
+        }
+
+
+        List<Player> activePlayers =
+                playerRepository.findByIsActiveTrue();
+
+        for (Player player : activePlayers) {
+
+            if (!activePlayerIds.contains(player.getPlayerIdFromApi())) {
+                player.setActive(false);
+                playerRepository.save(player);
+            }
+        }
+
+        return "Sync complete! Total active players: "
+                + activePlayerIds.size();
     }
+
     public void savePlayer(Map playerData){
         Integer apiId = (Integer) playerData.get("id");
         Player player = playerRepository.findByPlayerIdFromApi(apiId).orElse(new Player());
-
+        player.setActive(true);
         player.setPlayerIdFromApi(apiId);
         player.setFirstName((String) playerData.get("first_name"));
         player.setLastName((String) playerData.get("last_name"));
@@ -107,6 +167,13 @@ public class PlayerService {
 
     public List<PlayerDTO> getPlayerByName(String name) {
         return playerRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(name, name).stream()
+                .map(this::convertToDTO)
+                .toList();
+    }
+    public List<PlayerDTO> getTeamRoster(Long teamId) {
+        return playerRepository
+                .findByTeam_IdAndIsActiveTrue(teamId)
+                .stream()
                 .map(this::convertToDTO)
                 .toList();
     }
