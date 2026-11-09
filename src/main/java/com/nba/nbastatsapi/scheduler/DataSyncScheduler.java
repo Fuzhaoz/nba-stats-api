@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
+import com.nba.nbastatsapi.service.BoxScoreService;
 import java.time.LocalDate;
 import java.time.ZoneId;
 
@@ -18,7 +18,7 @@ public class DataSyncScheduler {
     private final TeamService teamService;
     private final GameService gameService;
     private final BackfillService backfillService;
-
+    private final BoxScoreService boxScoreService;
 
 
     @Scheduled(cron = "0 0 2 * * *")
@@ -59,6 +59,13 @@ public class DataSyncScheduler {
         int month = today.getMonthValue();
 
         return month >= 10 ? year : year - 1;
+    }
+
+    // Sync box scores for newly completed games
+    @Scheduled(cron = "0 10 * * * *", zone = "America/New_York")
+    public void scheduledBoxScoreSync() {
+        log.info("Starting scheduled box score sync...");
+        backfillService.backfillBoxScores();
     }
 
 }

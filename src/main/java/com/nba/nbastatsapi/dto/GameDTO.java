@@ -6,6 +6,9 @@ import lombok.Getter;
 @Getter
 @Builder
 public class GameDTO {
+    private Long gameId;
+    private Long homeTeamId;
+    private Long visitorTeamId;
     private String date;
     private String datetime;
     private String status;

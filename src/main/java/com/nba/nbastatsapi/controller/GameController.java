@@ -1,7 +1,11 @@
 package com.nba.nbastatsapi.controller;
 
+import com.nba.nbastatsapi.dto.BoxScoreDTO;
 import com.nba.nbastatsapi.dto.GameDTO;
 import com.nba.nbastatsapi.entity.Game;
+import com.nba.nbastatsapi.repository.GameRepository;
+import com.nba.nbastatsapi.service.BackfillService;
+import com.nba.nbastatsapi.service.BoxScoreService;
 import com.nba.nbastatsapi.service.GameService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,6 +24,9 @@ import java.util.List;
 @Tag(name = "Games", description = "NBA game results and synchronization")
 public class GameController {
     private final GameService gameService;
+    private final BoxScoreService boxScoreService;
+    private final GameRepository gameRepository;
+    private final BackfillService backfillService;
 
     @PostMapping("/sync")
     @Operation(summary = "Sync games", description = "Fetch games from balldontlie API")
@@ -31,6 +38,21 @@ public class GameController {
         String result = gameService.syncGames();
         return ResponseEntity.ok(result);
     }
+
+    @PostMapping("/{id}/box-score/sync")
+    public void syncBoxScore(@PathVariable Long id) {
+        Game game = gameRepository.findById(id)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Game not found: " + id)
+                );
+        boxScoreService.syncBoxScore(game.getGameIdFromApi());
+    }
+
+    @GetMapping("/{id}/box-score")
+    public List<BoxScoreDTO> getBoxScore(@PathVariable Long id) {
+        return boxScoreService.getBoxScore(id);
+    }
+
 
     @GetMapping("/today")
     @Operation(summary = "Get today's games", description = "Return all NBA games scheduled for today (adjusted for Australia timezone)")
@@ -61,6 +83,34 @@ public class GameController {
             @PathVariable Long teamId,
             @RequestParam(defaultValue = "10") int limit) {
         return ResponseEntity.ok(gameService.getRecentGames(teamId, limit));
+    }
+    @GetMapping("/{id}")
+    @Operation(
+            summary = "Get game details",
+            description = "Return a single NBA game by database ID"
+    )
+    public ResponseEntity<GameDTO> getGameById(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(gameService.getGameById(id));
+    }
+
+    // Test lineup synchronization for a specific game
+    @PostMapping("/{id}/lineups/sync")
+    public void syncLineups(@PathVariable Long id) {
+        Game game = gameRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Game not found"));
+
+        boxScoreService.syncLineups(game.getGameIdFromApi());
+    }
+
+    // Trigger a limited box score backfill
+    @PostMapping("/box-scores/backfill")
+    public ResponseEntity<String> backfillBoxScores() {
+
+        backfillService.backfillBoxScores();
+
+        return ResponseEntity.ok("Box score backfill completed");
     }
 
 }
