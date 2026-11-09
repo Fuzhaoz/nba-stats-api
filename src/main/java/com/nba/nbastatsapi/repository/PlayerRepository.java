@@ -14,4 +14,5 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
             String firstName, String lastName);
     List<Player> findByIsActiveTrue();
     List<Player> findByTeam_IdAndIsActiveTrue(Long teamId);
+
 }

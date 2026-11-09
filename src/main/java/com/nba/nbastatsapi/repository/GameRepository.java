@@ -20,4 +20,5 @@ public interface GameRepository extends JpaRepository<Game, Long> {
     List<Game> findByVisitorTeamId(Long visitorTeamId);
     @Query("SELECT g FROM Game g WHERE (g.homeTeam.id = :teamId OR g.visitorTeam.id = :teamId) AND g.status = 'Final' ORDER BY g.date DESC LIMIT :limit")
     List<Game> findRecentGamesByTeamId(@Param("teamId") Long teamId, @Param("limit") int limit);
+    List<Game> findBySeasonOrderByDateAscIdAsc(Integer season);
 }

@@ -54,4 +54,7 @@ public class Game {
     private Integer visitorOt3;
     private String datetime;
 
+    @Builder.Default
+    private Boolean boxScoreSynced = false;
+
 }

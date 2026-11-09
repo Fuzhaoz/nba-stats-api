@@ -134,9 +134,7 @@ public class GameService {
 
     private GameDTO convertGameDTO(Game game){
        Team homeTeam = game.getHomeTeam();
-        Team visitorTeam = game.getVisitorTeam();
-
-
+       Team visitorTeam = game.getVisitorTeam();
         return GameDTO.builder()
                 .date(game.getDate())
                 .datetime(game.getDatetime())
@@ -145,6 +143,9 @@ public class GameService {
                 .homeTeamName(homeTeam != null ? homeTeam.getName() : null)
                 .homeTeamAbbreviation(homeTeam  != null ? homeTeam .getAbbreviation() : null)
                 .homeTeamScore(game.getHomeTeamScore())
+                .gameId(game.getId())
+                .homeTeamId(homeTeam != null ? homeTeam.getId() : null)
+                .visitorTeamId(visitorTeam != null ? visitorTeam.getId() : null)
                 .homeQ1(game.getHomeQ1())
                 .homeQ2(game.getHomeQ2())
                 .homeQ3(game.getHomeQ3())
@@ -162,22 +163,49 @@ public class GameService {
                 .visitorOt1(game.getVisitorOt1())
                 .visitorOt2(game.getVisitorOt2())
                 .visitorOt3(game.getVisitorOt3())
-                .winner(determimeWinner(game))
+                .winner(determineWinner(game))
                 .build();
 
     }
 
-    private String determimeWinner(Game game){
-        if(game.getHomeTeamScore() == null || game.getVisitorTeamScore() == null){
-            return null;
-        }else if(game.getVisitorTeamScore() > game.getHomeTeamScore()){
-            return game.getVisitorTeam().getName();
-        }else if(game.getHomeTeamScore() > game.getVisitorTeamScore()){
-            return game.getHomeTeam().getName();
-        }else {
+    private String determineWinner(Game game) {
+
+        if (!"Final".equals(game.getStatus())) {
             return null;
         }
 
+        Integer homeScore = game.getHomeTeamScore();
+        Integer visitorScore = game.getVisitorTeamScore();
+
+        if (homeScore == null || visitorScore == null) {
+            return null;
+        }
+
+        if (homeScore > visitorScore) {
+            return game.getHomeTeam() != null
+                    ? game.getHomeTeam().getName()
+                    : null;
+        }
+
+        if (visitorScore > homeScore) {
+            return game.getVisitorTeam() != null
+                    ? game.getVisitorTeam().getName()
+                    : null;
+        }
+
+        return null;
+    }
+
+    public GameDTO getGameById(Long gameId) {
+
+        Game game = gameRepository.findById(gameId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Game not found with id: " + gameId
+                        )
+                );
+
+        return convertGameDTO(game);
     }
 
 
@@ -194,8 +222,6 @@ public class GameService {
                 .map(this::convertGameDTO)
                 .toList();
     }
-
-
 
 
     public List<GameDTO> getRecentGames(Long teamId, int limit) {
