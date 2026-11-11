@@ -62,7 +62,7 @@ public class DataSyncScheduler {
     }
 
     // Sync box scores for newly completed games
-    @Scheduled(cron = "0 10 * * * *", zone = "America/New_York")
+    @Scheduled(cron = "0 */30 * * * *", zone = "America/New_York")
     public void scheduledBoxScoreSync() {
         log.info("Starting scheduled box score sync...");
         backfillService.backfillBoxScores();
