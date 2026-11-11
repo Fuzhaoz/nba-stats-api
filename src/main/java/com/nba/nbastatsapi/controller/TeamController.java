@@ -2,9 +2,11 @@ package com.nba.nbastatsapi.controller;
 
 
 import com.nba.nbastatsapi.dto.PlayerDTO;
+import com.nba.nbastatsapi.dto.PlayerSeasonStatsDTO;
 import com.nba.nbastatsapi.dto.TeamDTO;
 import com.nba.nbastatsapi.dto.TeamRecordDTO;
 import com.nba.nbastatsapi.service.PlayerService;
+import com.nba.nbastatsapi.service.PlayerStatsService;
 import com.nba.nbastatsapi.service.TeamService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -25,6 +27,7 @@ public class TeamController {
 
     private final TeamService teamService;
     private final PlayerService playerService;
+    private final PlayerStatsService playerStatsService;
 
     @PostMapping("/sync")
     @Operation(summary = "Sync teams", description = "Fetch all 30 NBA teams from balldontlie API and save to database")
@@ -101,6 +104,22 @@ public class TeamController {
     public ResponseEntity<List<PlayerDTO>> getTeamRoster(@PathVariable Long id) {
         return ResponseEntity.ok(playerService.getTeamRoster(id));
     }
-
-
+    // Get season stats for all players on a team.
+    @GetMapping("/{id}/player-stats")
+    @Operation(
+            summary = "Get team player stats",
+            description = "Get season averages for all players on a team"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Team player stats returned successfully"
+    )
+    public ResponseEntity<List<PlayerSeasonStatsDTO>> getTeamPlayerStats(
+            @PathVariable Long id,
+            @RequestParam Integer season
+    ) {
+        return ResponseEntity.ok(
+                playerStatsService.getTeamPlayerStats(id, season)
+        );
+    }
 }

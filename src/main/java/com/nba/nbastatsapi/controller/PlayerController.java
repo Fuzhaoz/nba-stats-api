@@ -1,8 +1,11 @@
 package com.nba.nbastatsapi.controller;
 
 import com.nba.nbastatsapi.dto.PlayerDTO;
+import com.nba.nbastatsapi.dto.PlayerGameLogDTO;
+import com.nba.nbastatsapi.dto.PlayerSeasonStatsDTO;
 import com.nba.nbastatsapi.entity.Player;
 import com.nba.nbastatsapi.service.PlayerService;
+import com.nba.nbastatsapi.service.PlayerStatsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -19,6 +22,7 @@ import java.util.List;
 @Tag(name = "Players", description = "NBA player data and synchronization")
 public class PlayerController {
     private final PlayerService playerService;
+    private final PlayerStatsService playerStatsService;
 
 
     @PostMapping("/sync")
@@ -56,4 +60,31 @@ public class PlayerController {
     public ResponseEntity<List<PlayerDTO>> searchPlayers(@RequestParam String name) {
         return ResponseEntity.ok(playerService.getPlayerByName(name));
     }
+
+    @GetMapping("/{id}/season-stats")
+    public PlayerSeasonStatsDTO getSeasonStats(
+            @PathVariable Long id,
+            @RequestParam Integer season
+    ) {
+        return playerStatsService.getSeasonStats(id, season);
+    }
+
+    @GetMapping("/{id}/game-logs")
+    @Operation(
+            summary = "Get player game logs",
+            description = "Get all completed game statistics for a player in a specific season, ordered by most recent game"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Player game logs returned successfully"
+    )
+    public ResponseEntity<List<PlayerGameLogDTO>> getPlayerGameLogs(
+            @PathVariable Long id,
+            @RequestParam Integer season
+    ) {
+        return ResponseEntity.ok(
+                playerStatsService.getPlayerGameLogs(id, season)
+        );
+    }
+
 }
