@@ -1,12 +1,10 @@
 package com.nba.nbastatsapi.scheduler;
-import com.nba.nbastatsapi.service.BackfillService;
-import com.nba.nbastatsapi.service.GameService;
-import com.nba.nbastatsapi.service.TeamService;
+import com.nba.nbastatsapi.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import com.nba.nbastatsapi.service.BoxScoreService;
+
 import java.time.LocalDate;
 import java.time.ZoneId;
 
@@ -19,6 +17,7 @@ public class DataSyncScheduler {
     private final GameService gameService;
     private final BackfillService backfillService;
     private final BoxScoreService boxScoreService;
+    private final TeamSeasonStatsService teamSeasonStatsService;
 
 
     @Scheduled(cron = "0 0 2 * * *")
@@ -67,5 +66,22 @@ public class DataSyncScheduler {
         log.info("Starting scheduled box score sync...");
         backfillService.backfillBoxScores();
     }
+
+
+    @Scheduled(cron = "0 0 6 * * *", zone = "America/New_York")
+    public void scheduledTeamSeasonStatsSync() {
+
+        log.info("Starting team season stats sync...");
+
+        try {
+            int count = teamSeasonStatsService.syncTeamSeasonStats();
+
+            log.info("Team season stats sync completed. Synced {} records.", count);
+
+        } catch (Exception e) {
+            log.error("Team season stats sync failed", e);
+        }
+    }
+
 
 }
