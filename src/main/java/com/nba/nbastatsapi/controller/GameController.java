@@ -2,11 +2,13 @@ package com.nba.nbastatsapi.controller;
 
 import com.nba.nbastatsapi.dto.BoxScoreDTO;
 import com.nba.nbastatsapi.dto.GameDTO;
+import com.nba.nbastatsapi.dto.GameMatchupDTO;
 import com.nba.nbastatsapi.entity.Game;
 import com.nba.nbastatsapi.repository.GameRepository;
 import com.nba.nbastatsapi.service.BackfillService;
 import com.nba.nbastatsapi.service.BoxScoreService;
 import com.nba.nbastatsapi.service.GameService;
+import com.nba.nbastatsapi.service.MatchupService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -27,6 +29,7 @@ public class GameController {
     private final BoxScoreService boxScoreService;
     private final GameRepository gameRepository;
     private final BackfillService backfillService;
+    private final MatchupService matchupService;
 
     @PostMapping("/sync")
     @Operation(summary = "Sync games", description = "Fetch games from balldontlie API")
@@ -111,6 +114,16 @@ public class GameController {
         backfillService.backfillBoxScores();
 
         return ResponseEntity.ok("Box score backfill completed");
+    }
+
+
+    @GetMapping("/{gameId}/matchup")
+    @Operation(
+            summary = "Get game matchup analysis",
+            description = "Return season statistics for both teams in a specific NBA game"
+    )
+    public GameMatchupDTO getGameMatchup(@PathVariable Long gameId) {
+        return matchupService.getGameMatchup(gameId);
     }
 
 }
