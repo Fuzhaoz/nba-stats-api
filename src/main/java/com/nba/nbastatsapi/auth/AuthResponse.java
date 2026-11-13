@@ -1,4 +1,4 @@
-package com.nba.nbastatsapi.dto.auth;
+package com.nba.nbastatsapi.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

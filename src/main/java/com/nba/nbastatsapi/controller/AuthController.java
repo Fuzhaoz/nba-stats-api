@@ -1,17 +1,20 @@
 package com.nba.nbastatsapi.controller;
 
-import com.nba.nbastatsapi.dto.auth.AuthResponse;
-import com.nba.nbastatsapi.dto.auth.LoginRequest;
-import com.nba.nbastatsapi.dto.auth.RegisterRequest;
+import com.nba.nbastatsapi.auth.AuthResponse;
+import com.nba.nbastatsapi.auth.LoginRequest;
+import com.nba.nbastatsapi.auth.RegisterRequest;
 import com.nba.nbastatsapi.entity.Role;
 import com.nba.nbastatsapi.entity.User;
 import com.nba.nbastatsapi.repository.UserRepository;
+import com.nba.nbastatsapi.service.AuthService;
 import com.nba.nbastatsapi.service.JwtService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
 
 
 @RestController
@@ -19,35 +22,30 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
+    private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
+
+        boolean success = authService.register(request);
+
+        if (!success) {
             return ResponseEntity.badRequest().body("Email already exists");
         }
 
-        User user = new User();
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(Role.USER);
-
-        userRepository.save(user);
         return ResponseEntity.ok("User registered successfully");
     }
 
+    // Authenticate a user and return a JWT
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            return ResponseEntity.status(401).body(null);
+        String token = authService.login(request);
+
+        if (token == null) {
+            return ResponseEntity.status(401).build();
         }
 
-        String token = jwtService.generateToken(user.getEmail(), user.getRole());
         return ResponseEntity.ok(new AuthResponse(token));
     }
 

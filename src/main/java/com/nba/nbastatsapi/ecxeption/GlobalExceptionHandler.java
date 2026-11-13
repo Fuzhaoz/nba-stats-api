@@ -3,6 +3,7 @@ package com.nba.nbastatsapi.ecxeption;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -33,6 +34,29 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .build();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+
+
+    // Handle invalid request body fields
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(
+            MethodArgumentNotValidException ex) {
+
+        String message = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> error.getDefaultMessage())
+                .findFirst()
+                .orElse("Invalid request");
+
+        ErrorResponse response = ErrorResponse.builder()
+                .status(400)
+                .message(message)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+
+        return ResponseEntity.badRequest().body(response);
     }
 
 }
