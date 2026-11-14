@@ -18,6 +18,7 @@ public class DataSyncScheduler {
     private final BackfillService backfillService;
     private final BoxScoreService boxScoreService;
     private final TeamSeasonStatsService teamSeasonStatsService;
+    private final PredictionService predictionService;
 
 
     @Scheduled(cron = "0 0 2 * * *")
@@ -32,11 +33,16 @@ public class DataSyncScheduler {
 
         log.info("Starting NBA games sync...");
 
-        //  Backfill missing games from previous dates
+        // Backfill missing games from previous dates
         backfillService.backfillGames();
 
-        // update today games
+        // Sync today and yesterday games
         gameService.syncTodayGames();
+
+        // Settle predictions after scores are updated
+        int settledCount = predictionService.settlePredictions();
+
+        log.info("Settled {} predictions.", settledCount);
 
         log.info("NBA games sync completed!");
     }

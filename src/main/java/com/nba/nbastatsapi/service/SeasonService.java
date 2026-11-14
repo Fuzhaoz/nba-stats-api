@@ -21,4 +21,10 @@ public class SeasonService {
 
         return year - 1;
     }
+
+    // Get today's date in the NBA timezone
+    public LocalDate getNbaToday() {
+        return LocalDate.now(NBA_ZONE);
+    }
+
 }
