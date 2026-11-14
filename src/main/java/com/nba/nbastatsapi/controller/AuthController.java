@@ -26,14 +26,17 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
+        try {
+            authService.register(request);
 
-        boolean success = authService.register(request);
+            return ResponseEntity.ok("User registered successfully");
 
-        if (!success) {
-            return ResponseEntity.badRequest().body("Email already exists");
+        } catch (IllegalArgumentException e) {
+
+            return ResponseEntity
+                    .status(409)
+                    .body(e.getMessage());
         }
-
-        return ResponseEntity.ok("User registered successfully");
     }
 
     // Authenticate a user and return a JWT

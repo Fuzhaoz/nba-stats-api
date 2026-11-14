@@ -21,18 +21,24 @@ public class AuthService {
 
 
     // Register a new user
-    public boolean register(RegisterRequest request) {
+    public void register(RegisterRequest request) {
+        // Check if email is already registered
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            return false;
+            throw new IllegalArgumentException("Email already exists");
         }
 
+        // Check if username is already taken
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new IllegalArgumentException("Username already exists");
+        }
         User user = new User();
         user.setEmail(request.getEmail());
+        user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.USER);
 
         userRepository.save(user);
-        return true;
+
     }
     // Authenticate a user and generate a JWT
     public String login(LoginRequest request) {
