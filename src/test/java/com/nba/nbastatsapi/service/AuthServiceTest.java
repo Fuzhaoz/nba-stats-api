@@ -34,41 +34,51 @@ class AuthServiceTest {
 
     // Verify registration fails when the email already exists
     @Test
-    void register_shouldReturnFalse_whenEmailAlreadyExists() {
+    void register_shouldThrowException_whenEmailAlreadyExists() {
 
         RegisterRequest request = new RegisterRequest();
         request.setEmail("test@example.com");
+        request.setUsername("Tony");
         request.setPassword("password123");
 
         when(userRepository.findByEmail("test@example.com"))
                 .thenReturn(Optional.of(new User()));
 
-        boolean result = authService.register(request);
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.register(request)
+        );
 
-        assertFalse(result);
+        assertEquals("Email already exists", exception.getMessage());
+
         verify(userRepository, never()).save(any(User.class));
     }
 
     // Verify successful registration encrypts the password and saves the user
     @Test
-    void register_shouldSaveUser_whenEmailDoesNotExist() {
+    void register_shouldSaveUser_whenEmailAndUsernameDoNotExist() {
+
         RegisterRequest request = new RegisterRequest();
         request.setEmail("new@example.com");
+        request.setUsername("NewPlayer");
         request.setPassword("password123");
 
         when(userRepository.findByEmail("new@example.com"))
                 .thenReturn(Optional.empty());
 
+        when(userRepository.existsByUsername("NewPlayer"))
+                .thenReturn(false);
+
         when(passwordEncoder.encode("password123"))
                 .thenReturn("hashedPassword");
 
-        boolean result = authService.register(request);
-
-        assertTrue(result);
+        assertDoesNotThrow(() -> authService.register(request));
 
         verify(passwordEncoder).encode("password123");
+
         verify(userRepository).save(argThat(user ->
                 user.getEmail().equals("new@example.com")
+                        && user.getUsername().equals("NewPlayer")
                         && user.getPassword().equals("hashedPassword")
                         && user.getRole() == Role.USER
         ));
