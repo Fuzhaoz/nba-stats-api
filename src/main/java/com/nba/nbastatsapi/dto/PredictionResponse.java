@@ -8,7 +8,7 @@ import com.nba.nbastatsapi.entity.PredictionStatus;
 
 public record PredictionResponse(
         Long id,
-        Integer gameId,
+        Long gameId,
         PredictionSide side,
         BigDecimal spreadHomeSnapshot,
         PredictionStatus status,

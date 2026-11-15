@@ -2,13 +2,11 @@ package com.nba.nbastatsapi.controller;
 
 import com.nba.nbastatsapi.dto.BoxScoreDTO;
 import com.nba.nbastatsapi.dto.GameDTO;
+import com.nba.nbastatsapi.dto.GameDetailDTO;
 import com.nba.nbastatsapi.dto.GameMatchupDTO;
 import com.nba.nbastatsapi.entity.Game;
 import com.nba.nbastatsapi.repository.GameRepository;
-import com.nba.nbastatsapi.service.BackfillService;
-import com.nba.nbastatsapi.service.BoxScoreService;
-import com.nba.nbastatsapi.service.GameService;
-import com.nba.nbastatsapi.service.MatchupService;
+import com.nba.nbastatsapi.service.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -30,6 +28,7 @@ public class GameController {
     private final GameRepository gameRepository;
     private final BackfillService backfillService;
     private final MatchupService matchupService;
+    private final GameDetailService gameDetailService;
 
     @PostMapping("/sync")
     @Operation(summary = "Sync games", description = "Fetch games from balldontlie API")
@@ -124,6 +123,19 @@ public class GameController {
     )
     public GameMatchupDTO getGameMatchup(@PathVariable Long gameId) {
         return matchupService.getGameMatchup(gameId);
+    }
+
+    @GetMapping("/{id}/detail")
+    @Operation(
+            summary = "Get game detail",
+            description = "Return game information with pregame matchup and spread when available"
+    )
+    public ResponseEntity<GameDetailDTO> getGameDetail(
+            @PathVariable Long id) {
+
+        GameDetailDTO detail = gameDetailService.getGameDetail(id);
+
+        return ResponseEntity.ok(detail);
     }
 
 }

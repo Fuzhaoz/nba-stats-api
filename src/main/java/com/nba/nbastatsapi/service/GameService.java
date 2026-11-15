@@ -211,8 +211,14 @@ public class GameService {
 
 
     public List<GameDTO> getTodayGames() {
-        String yesterday = LocalDate.now().minusDays(1).toString();
-        return gameRepository.findByDate(yesterday).stream()
+        LocalDate sydneyToday = LocalDate.now(
+                ZoneId.of("Australia/Sydney")
+        );
+
+        LocalDate nbaGameDate = sydneyToday.minusDays(1);
+
+        return gameRepository.findByDate(nbaGameDate.toString())
+                .stream()
                 .map(this::convertGameDTO)
                 .toList();
     }

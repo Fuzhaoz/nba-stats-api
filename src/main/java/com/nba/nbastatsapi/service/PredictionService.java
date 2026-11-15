@@ -145,7 +145,7 @@ public class PredictionService {
     private PredictionResponse toResponse(Prediction prediction) {
         return new PredictionResponse(
                 prediction.getId(),
-                prediction.getGame().getGameIdFromApi(),
+                prediction.getGame().getId(),
                 prediction.getSide(),
                 prediction.getSpreadHomeSnapshot(),
                 prediction.getStatus(),
