@@ -19,6 +19,7 @@ public class DataSyncScheduler {
     private final BoxScoreService boxScoreService;
     private final TeamSeasonStatsService teamSeasonStatsService;
     private final PredictionService predictionService;
+    private final OddsService oddsService;
 
 
     @Scheduled(cron = "0 0 2 * * *")
@@ -38,6 +39,18 @@ public class DataSyncScheduler {
 
         // Sync today and yesterday games
         gameService.syncTodayGames();
+
+        // 3. Sync odds after games exist
+        try {
+            log.info("Starting NBA odds sync...");
+
+            int oddsCount = oddsService.syncOdds();
+
+            log.info("NBA odds sync completed. Synced {} records.", oddsCount);
+
+        } catch (Exception e) {
+            log.error("NBA odds sync failed", e);
+        }
 
         // Settle predictions after scores are updated
         int settledCount = predictionService.settlePredictions();

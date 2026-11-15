@@ -42,7 +42,7 @@ public class PredictionController {
                         new IllegalArgumentException("User not found"));
 
         Game game = gameRepository
-                .findByGameIdFromApi(request.getGameId())
+                .findById(request.getGameId())
                 .orElseThrow(() ->
                         new IllegalArgumentException("Game not found"));
 

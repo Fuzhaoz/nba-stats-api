@@ -11,7 +11,7 @@ public class PredictionRequest {
 
     // NBA game ID from the external API
     @NotNull
-    private Integer gameId;
+    private Long gameId;
 
     // Selected team: HOME or AWAY
     @NotNull
