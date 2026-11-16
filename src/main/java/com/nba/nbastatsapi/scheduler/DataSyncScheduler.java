@@ -5,8 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -20,6 +22,7 @@ public class DataSyncScheduler {
     private final TeamSeasonStatsService teamSeasonStatsService;
     private final PredictionService predictionService;
     private final OddsService oddsService;
+    private final PlayerLeaderSyncService playerLeaderSyncService;
 
 
     @Scheduled(cron = "0 0 2 * * *")
@@ -101,6 +104,34 @@ public class DataSyncScheduler {
             log.error("Team season stats sync failed", e);
         }
     }
+    @Scheduled(cron = "0 0 6 * * *", zone = "America/New_York")
+    public void scheduledPlayerLeadersSync() {
 
+        log.info("Starting player leaders sync...");
+
+        List<String> statTypes =
+                List.of("pts", "reb", "ast", "blk", "stl");
+
+        for (String statType : statTypes) {
+            try {
+                int count = playerLeaderSyncService.syncPlayerLeaders(statType);
+
+                log.info(
+                        "Player leaders sync completed for {}. Synced {} records.",
+                        statType,
+                        count
+                );
+
+            } catch (Exception e) {
+                log.error(
+                        "Player leaders sync failed for {}",
+                        statType,
+                        e
+                );
+            }
+        }
+
+        log.info("Player leaders scheduled sync finished.");
+    }
 
 }
