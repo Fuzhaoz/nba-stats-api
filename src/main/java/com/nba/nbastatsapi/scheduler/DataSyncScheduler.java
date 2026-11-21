@@ -33,15 +33,13 @@ public class DataSyncScheduler {
     }
 
     @Scheduled(cron = "0 */30 * * * *")
-    public void syncTodayGames() {
+    public void syncGameMaintenance() {
 
         log.info("Starting NBA games sync...");
 
         // Backfill missing games from previous dates
         backfillService.backfillGames();
 
-        // Sync today and yesterday games
-        gameService.syncTodayGames();
 
         // 3. Sync odds after games exist
         try {
@@ -62,6 +60,23 @@ public class DataSyncScheduler {
 
         log.info("NBA games sync completed!");
     }
+    @Scheduled(fixedDelay = 60000)
+    public void syncGameScores() {
+
+        log.info("Starting game score sync...");
+
+        try {
+            gameService.syncTodayGames();
+
+            log.info("Game score sync completed.");
+
+        } catch (Exception e) {
+            log.error("Game score sync failed", e);
+        }
+    }
+
+
+
     @Scheduled(cron = "0 5,35 * * * *", zone = "America/New_York")
     public void scheduledStandingsSync() {
 
